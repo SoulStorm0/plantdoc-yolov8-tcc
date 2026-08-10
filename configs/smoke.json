@@ -1,0 +1,23 @@
+{
+  "project": "runs/smoke",
+  "model": "yolov8n.yaml",
+  "imgsz": 64,
+  "seed": 42,
+  "deterministic": true,
+  "optimizer": "SGD",
+  "epochs": [1],
+  "batch": [2],
+  "lr0": [0.001],
+  "momentum": [0.9],
+  "weight_decay": [0.0005],
+  "lrf": 0.01,
+  "warmup_epochs": 0.0,
+  "warmup_momentum": 0.8,
+  "cos_lr": true,
+  "patience": 1,
+  "loss_strategies": ["baseline"],
+  "class_weighting": {"method": "sqrt_inverse_frequency", "max_weight": 8.0},
+  "focal": {"gamma": 2.0, "alpha": 0.25},
+  "augmentation": {"fliplr": 0.0, "flipud": 0.0, "degrees": 0.0, "hsv_v": 0.0, "mosaic": 0.0, "close_mosaic": 0}
+}
+
