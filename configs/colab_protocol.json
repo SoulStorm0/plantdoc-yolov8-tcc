@@ -1,0 +1,50 @@
+{
+  "model": "yolov8n.pt",
+  "expected_classes": 27,
+  "imgsz": 640,
+  "seed": 42,
+  "deterministic": true,
+  "optimizer": "SGD",
+  "lrf": 0.01,
+  "warmup_epochs": 5.0,
+  "warmup_momentum": 0.8,
+  "cos_lr": true,
+  "patience": 30,
+  "workers": 2,
+  "loss_comparison": {
+    "epochs": 100,
+    "batch": 16,
+    "lr0": 0.0001,
+    "momentum": 0.937,
+    "weight_decay": 0.0005,
+    "strategies": ["baseline", "class_weighted", "focal"]
+  },
+  "search": {
+    "epochs": 100,
+    "trials": [
+      {"batch": 16, "lr0": 0.001, "momentum": 0.9, "weight_decay": 0.0001},
+      {"batch": 16, "lr0": 0.001, "momentum": 0.937, "weight_decay": 0.0005},
+      {"batch": 32, "lr0": 0.001, "momentum": 0.937, "weight_decay": 0.001},
+      {"batch": 16, "lr0": 0.0001, "momentum": 0.9, "weight_decay": 0.0005},
+      {"batch": 16, "lr0": 0.0001, "momentum": 0.937, "weight_decay": 0.0001},
+      {"batch": 32, "lr0": 0.0001, "momentum": 0.937, "weight_decay": 0.0005},
+      {"batch": 16, "lr0": 0.00001, "momentum": 0.9, "weight_decay": 0.001},
+      {"batch": 32, "lr0": 0.00001, "momentum": 0.937, "weight_decay": 0.0005}
+    ]
+  },
+  "promotion": {"top_k": 3, "epochs": 200},
+  "confirmation": {"epochs": 300},
+  "class_weighting": {
+    "method": "sqrt_inverse_frequency",
+    "max_weight": 8.0
+  },
+  "focal": {"gamma": 2.0, "alpha": 0.25},
+  "augmentation": {
+    "fliplr": 0.5,
+    "flipud": 0.2,
+    "degrees": 15.0,
+    "hsv_v": 0.2,
+    "mosaic": 1.0,
+    "close_mosaic": 10
+  }
+}

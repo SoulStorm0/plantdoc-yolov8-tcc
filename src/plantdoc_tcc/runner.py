@@ -53,7 +53,7 @@ def train_grid(
             data=str(Path(data_yaml).resolve()),
             project=str(project),
             name=spec.name,
-            exist_ok=False,
+            exist_ok=bool(config.get("exist_ok", False)),
             epochs=spec.epochs,
             batch=spec.batch,
             imgsz=int(config.get("imgsz", 640)),

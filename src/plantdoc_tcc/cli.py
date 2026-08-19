@@ -27,6 +27,19 @@ def parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--data", required=True)
     evaluate.add_argument("--split", default="test")
     evaluate.add_argument("--output", default="artifacts/metrics.json")
+    staged = commands.add_parser("staged")
+    staged.add_argument("--data", required=True)
+    staged.add_argument("--config", default="configs/colab_protocol.json")
+    staged.add_argument("--project", required=True)
+    staged.add_argument(
+        "--phase",
+        choices=["loss", "search", "promote200", "confirm300", "all"],
+        required=True,
+    )
+    staged.add_argument("--device", default="0")
+    final_test = commands.add_parser("final-test")
+    final_test.add_argument("--data", required=True)
+    final_test.add_argument("--project", required=True)
     return root
 
 
@@ -49,6 +62,15 @@ def main(argv=None):
         from .evaluate import evaluate
 
         print(json.dumps(evaluate(args.weights, args.data, args.split, args.output), ensure_ascii=False, indent=2))
+    elif args.command == "staged":
+        from .staged import run_phase
+
+        result = run_phase(args.data, args.config, args.project, args.phase, args.device)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.command == "final-test":
+        from .staged import finalize_test
+
+        print(json.dumps(finalize_test(args.data, args.project), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
