@@ -1,0 +1,40 @@
+{
+  "model": "yolov8n.yaml",
+  "expected_classes": 2,
+  "imgsz": 64,
+  "seed": 42,
+  "deterministic": true,
+  "optimizer": "SGD",
+  "lrf": 0.01,
+  "warmup_epochs": 0.0,
+  "warmup_momentum": 0.8,
+  "cos_lr": true,
+  "patience": 1,
+  "workers": 0,
+  "loss_comparison": {
+    "epochs": 1,
+    "batch": 2,
+    "lr0": 0.001,
+    "momentum": 0.9,
+    "weight_decay": 0.0005,
+    "strategies": ["baseline"]
+  },
+  "search": {
+    "epochs": 1,
+    "trials": [
+      {"batch": 2, "lr0": 0.001, "momentum": 0.9, "weight_decay": 0.0005}
+    ]
+  },
+  "promotion": {"top_k": 1, "epochs": 1},
+  "confirmation": {"epochs": 1},
+  "class_weighting": {"method": "sqrt_inverse_frequency", "max_weight": 8.0},
+  "focal": {"gamma": 2.0, "alpha": 0.25},
+  "augmentation": {
+    "fliplr": 0.0,
+    "flipud": 0.0,
+    "degrees": 0.0,
+    "hsv_v": 0.0,
+    "mosaic": 0.0,
+    "close_mosaic": 0
+  }
+}

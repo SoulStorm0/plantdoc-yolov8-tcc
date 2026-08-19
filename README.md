@@ -15,7 +15,14 @@ Pipeline reproduzível para os experimentos propostos no TCC: PlantDoc em 640x64
 
 ## Execução rápida no Google Colab
 
-Abra [`notebooks/plantdoc_yolov8_colab.ipynb`](notebooks/plantdoc_yolov8_colab.ipynb), selecione uma GPU e execute as células. O notebook instala o projeto, recebe o ZIP exportado do Roboflow em formato **YOLOv8**, audita os rótulos e inicia o grid.
+Abra [`notebooks/plantdoc_yolov8_colab.ipynb`](notebooks/plantdoc_yolov8_colab.ipynb), selecione uma GPU e execute as células na ordem. O notebook monta o Google Drive, instala o projeto, prepara e audita o PlantDoc e executa um protocolo retomável em quatro fases:
+
+1. três losses por 100 épocas com hiperparâmetros fixos;
+2. oito combinações planejadas por 100 épocas usando a loss vencedora;
+3. as três melhores combinações novamente por 200 épocas;
+4. a melhor configuração por 300 épocas.
+
+Checkpoints e tabelas são gravados em `MyDrive/TCC_PlantDoc/runs_staged`. Runs concluídos são ignorados ao repetir uma célula. A avaliação final do teste exige confirmação explícita e é bloqueada depois da primeira execução.
 
 No terminal:
 
