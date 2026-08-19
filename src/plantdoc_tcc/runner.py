@@ -68,6 +68,8 @@ def train_grid(
             patience=int(config.get("patience", 30)),
             seed=int(config.get("seed", 42)),
             deterministic=bool(config.get("deterministic", True)),
+            fraction=float(config.get("fraction", 1.0)),
+            workers=int(config.get("workers", 8)),
             device=device,
             **augmentation,
         )

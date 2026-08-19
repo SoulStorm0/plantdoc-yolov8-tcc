@@ -40,6 +40,14 @@ python scripts/create_smoke_dataset.py
 python -m plantdoc_tcc train --data datasets/smoke/data.yaml --config configs/smoke.json --device cpu
 ```
 
+Com o PlantDoc preparado, o teste de integração usa 5% do treino real, pesos COCO e as três estratégias de loss:
+
+```bash
+python -m plantdoc_tcc train --data datasets/plantdoc_yolo_27/data.yaml --config configs/integration.json --device cpu
+```
+
+Esse comando valida o pipeline, mas uma época sobre 5% dos dados não é resultado científico.
+
 ## Dados
 
 Exporte o PlantDoc do Roboflow no formato YOLOv8, mantendo `train`, `valid` e `test`. O particionamento deve ser congelado e registrado em `data.yaml`. Não versione imagens, pesos ou credenciais.
@@ -55,6 +63,18 @@ plantdoc/
 ```
 
 O projeto não redistribui o dataset. A fonte acadêmica é Singh et al. (2020), e o dataset de detecção deve ser obtido da publicação original ou do projeto público no Roboflow, respeitando a licença CC BY 4.0.
+
+### Preparação reproduzível da fonte oficial
+
+O repositório oficial contém nomes de arquivo incompatíveis com Windows. O conversor lê os blobs diretamente do Git, converte Pascal VOC para YOLO, cria o split determinístico 70/20/10 e remove classes sem suporte estatístico mínimo:
+
+```bash
+git clone --depth 1 --no-checkout https://github.com/pratikkayal/PlantDoc-Object-Detection-Dataset.git datasets/plantdoc_official
+python scripts/prepare_official_plantdoc.py --output datasets/plantdoc_yolo_27 --min-class-instances 20
+python -m plantdoc_tcc audit --data datasets/plantdoc_yolo_27/data.yaml --expected-classes 27
+```
+
+A fonte oficial possui 29 classes utilizáveis, enquanto a página pública do Roboflow informa 30; nenhuma delas coincide com as 27 declaradas na proposta. Neste protocolo, duas classes com suporte insuficiente (`Potato leaf`, 11 instâncias, e `Tomato two spotted spider mites leaf`, 2 instâncias) e todas as imagens que as contêm são excluídas antes do split. O limiar e as exclusões ficam registrados em `conversion_report.txt`. Essa decisão deve ser explicitada na metodologia; sem ela, não existe ground truth de validação/teste para calcular métricas dessas classes.
 
 ## Protocolo das imagens externas
 
