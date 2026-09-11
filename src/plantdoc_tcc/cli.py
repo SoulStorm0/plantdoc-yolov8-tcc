@@ -37,6 +37,14 @@ def parser() -> argparse.ArgumentParser:
         required=True,
     )
     staged.add_argument("--device", default="0")
+    staged.add_argument(
+        "--run-index",
+        type=int,
+        help="Executa somente um item da fase (índice iniciado em 1).",
+    )
+    status = commands.add_parser("status")
+    status.add_argument("--config", default="configs/colab_protocol.json")
+    status.add_argument("--project", required=True)
     final_test = commands.add_parser("final-test")
     final_test.add_argument("--data", required=True)
     final_test.add_argument("--project", required=True)
@@ -65,8 +73,19 @@ def main(argv=None):
     elif args.command == "staged":
         from .staged import run_phase
 
-        result = run_phase(args.data, args.config, args.project, args.phase, args.device)
+        result = run_phase(
+            args.data,
+            args.config,
+            args.project,
+            args.phase,
+            args.device,
+            args.run_index,
+        )
         print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.command == "status":
+        from .staged import protocol_status
+
+        print(json.dumps(protocol_status(args.config, args.project), ensure_ascii=False, indent=2))
     elif args.command == "final-test":
         from .staged import finalize_test
 

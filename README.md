@@ -22,7 +22,46 @@ Abra [`notebooks/plantdoc_yolov8_colab.ipynb`](notebooks/plantdoc_yolov8_colab.i
 3. as três melhores combinações novamente por 200 épocas;
 4. a melhor configuração por 300 épocas.
 
-Checkpoints e tabelas são gravados em `MyDrive/TCC_PlantDoc/runs_staged`. Runs concluídos são ignorados ao repetir uma célula. A avaliação final do teste exige confirmação explícita e é bloqueada depois da primeira execução.
+Checkpoints e tabelas são gravados em `MyDrive/TCC_PlantDoc/runs_staged`. Cada uma das 3 execuções de loss, 8 buscas e 3 promoções pode ser iniciada separadamente com `--run-index`. Runs concluídos são ignorados; um `last.pt` interrompido é retomado. A avaliação final do teste exige confirmação explícita e é bloqueada depois da primeira execução.
+
+Exemplo de uma única execução e consulta dos itens pendentes:
+
+```bash
+python -m plantdoc_tcc staged --data "$DATA_YAML" --config configs/colab_protocol.json --project "$RUN_ROOT" --phase loss --run-index 1 --device 0
+python -m plantdoc_tcc status --config configs/colab_protocol.json --project "$RUN_ROOT"
+```
+
+O notebook também oferece backup opcional dos checkpoints em um dataset privado do Kaggle. A autenticação usa o Secret `KAGGLE_API_TOKEN`; o token nunca deve ser escrito no notebook ou versionado. A cada backup, o Kaggle CLI cria uma nova versão do dataset.
+
+Se for necessário mudar a execução para uma GPU do Kaggle, siga [`docs/migracao_kaggle.md`](docs/migracao_kaggle.md). O procedimento restaura os checkpoints em `/kaggle/working`, recria o mesmo split do PlantDoc e continua somente o índice pendente.
+
+## Execução local no Windows
+
+Este computador pode executar o pipeline pela CPU. A RX 6600 não é compatível com CUDA e o backend Python do Ultralytics não oferece treinamento por DirectML; portanto, o modo local usa explicitamente `device=cpu`. A instalação e os resultados ficam isolados no próprio projeto.
+
+No PowerShell, dentro da pasta do projeto:
+
+```powershell
+.\scripts\setup_local.ps1
+.\scripts\run_local.ps1 -Mode Check -Phase all
+```
+
+`Check` usa 5% do treino, imagens 320x320 e uma época para verificar todo o encadeamento. Ele **não gera resultados científicos**. Depois que essa verificação terminar, execute o protocolo real por fases, deixando o computador ligado:
+
+```powershell
+.\scripts\run_local.ps1 -Mode Full -Phase loss
+.\scripts\run_local.ps1 -Mode Full -Phase search
+.\scripts\run_local.ps1 -Mode Full -Phase promote200
+.\scripts\run_local.ps1 -Mode Full -Phase confirm300
+```
+
+O modo `Full` usa exatamente `configs/colab_protocol.json` (640x640, 100/200/300 épocas e batches 16/32). Os artefatos ficam em `runs/local_full`; execuções concluídas são puladas e um `weights/last.pt` existente é retomado após interrupção. Somente depois de concluir e conferir as quatro fases, rode uma única vez:
+
+```powershell
+.\scripts\run_local.ps1 -Mode Full -Phase final-test
+```
+
+Em Ryzen 7 5700X, o protocolo integral pela CPU pode levar muitos dias. Não use `torch-directml`: além de limitado a uma versão antiga do PyTorch, ele não é um backend de treinamento suportado pelo Ultralytics.
 
 No terminal:
 
@@ -89,7 +128,7 @@ Veja [`docs/protocolo_avaliacao_externa.md`](docs/protocolo_avaliacao_externa.md
 
 ## Reprodutibilidade
 
-- Python 3.10-3.12 e dependências fixadas em `pyproject.toml`;
+- Python 3.10-3.13 e dependências fixadas em `pyproject.toml`;
 - seed 42, operações determinísticas quando suportadas e AMP desligável;
 - resultados em `runs/plantdoc`, configurações e versão das bibliotecas salvas pelo Ultralytics;
 - o conjunto de teste não participa da seleção de hiperparâmetros;
