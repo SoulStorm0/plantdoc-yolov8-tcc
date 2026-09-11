@@ -7,7 +7,7 @@ name = "plantdoc-tcc"
 version = "0.1.0"
 description = "Experimentos reprodutíveis de detecção de doenças foliares com YOLOv8"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.14"
 dependencies = [
   "ultralytics==8.4.21",
   "PyYAML==6.0.2",
@@ -30,4 +30,3 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-
