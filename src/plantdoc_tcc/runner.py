@@ -47,7 +47,9 @@ def train_grid(
                 focal_gamma=float(focal.get("gamma", 2.0)),
                 focal_alpha=float(focal.get("alpha", 0.25)),
             )
-        model = YOLO(config.get("model", "yolov8n.pt"))
+        last_checkpoint = project / spec.name / "weights" / "last.pt"
+        resume = bool(config.get("resume_existing", False) and last_checkpoint.exists())
+        model = YOLO(str(last_checkpoint) if resume else config.get("model", "yolov8n.pt"))
         augmentation = config.get("augmentation", {})
         arguments = dict(
             data=str(Path(data_yaml).resolve()),
@@ -71,6 +73,7 @@ def train_grid(
             fraction=float(config.get("fraction", 1.0)),
             workers=int(config.get("workers", 8)),
             device=device,
+            resume=resume,
             **augmentation,
         )
         if trainer is not None:
