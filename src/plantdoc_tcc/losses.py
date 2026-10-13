@@ -84,9 +84,14 @@ def make_trainer_class(
     BalancedDetectionModel.loss_focal_gamma = focal_gamma
     BalancedDetectionModel.loss_focal_alpha = focal_alpha
 
+    weights_config = weights
+
     class BalancedTrainer(DetectionTrainer):
         def get_model(self, cfg=None, weights=None, verbose=True):
             model = BalancedDetectionModel(cfg, nc=self.data["nc"], verbose=verbose and RANK == -1)
+            model.loss_class_weights = None if weights_config is None else list(weights_config)
+            model.loss_focal_gamma = focal_gamma
+            model.loss_focal_alpha = focal_alpha
             if weights:
                 model.load(weights)
             return model

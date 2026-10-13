@@ -8,11 +8,37 @@ from typing import Any
 
 from .config import RunSpec
 from .data import audit_dataset
+from .checkpoints import checkpoint_state
 
 
 METRIC_MAP = "metrics/mAP50-95(B)"
 METRIC_MAP50 = "metrics/mAP50(B)"
 PHASES = ("loss", "search", "promote200", "confirm300")
+PHASE_DIRS = dict(zip(PHASES, ("01_loss", "02_search", "03_promote200", "04_confirm300")))
+
+
+def _reconcile_summary(project: Path, summary: dict[str, Any]):
+    """Validate historical completion records before allowing model selection."""
+    invalidate_later = False
+    for phase in PHASES:
+        rows = summary.get("runs", {}).get(phase, [])
+        valid = []
+        if not invalidate_later:
+            for row in rows:
+                directory = project / PHASE_DIRS[phase] / row["name"]
+                state = checkpoint_state(directory, int(row["epochs"]))
+                if state["state"] == "completed":
+                    valid.append({**row, "weights": str(directory / "weights" / "best.pt"),
+                                  "results_csv": str(directory / "results.csv")})
+        if len(valid) != len(rows):
+            invalidate_later = True
+            if phase == "loss":
+                summary.pop("winning_loss", None)
+            summary.pop("best_model", None)
+        summary.setdefault("runs", {})[phase] = valid
+    if summary.get("best_model") and summary["runs"].get("confirm300"):
+        summary["best_model"] = summary["runs"]["confirm300"][0]
+    return summary
 
 
 def load_protocol(path: str | Path) -> dict[str, Any]:
@@ -97,10 +123,17 @@ def _run_spec(data: str, protocol: dict[str, Any], phase_dir: Path, spec: RunSpe
     run_dir = phase_dir / spec.name
     weights = run_dir / "weights" / "best.pt"
     results = run_dir / "results.csv"
-    if not (weights.exists() and results.exists()):
+    state = checkpoint_state(run_dir, spec.epochs)
+    if state["state"] not in {"pending", "interrupted", "completed"}:
+        raise RuntimeError(f"Checkpoint requer inspeção; nenhum arquivo foi alterado: {run_dir}: {state}")
+    if state["state"] != "completed":
         from .runner import train_grid
 
+        if state["state"] == "interrupted":
+            print(f"Retomando {spec.name} após época {state['saved_epoch']} de {spec.epochs}.")
         train_grid(data, _base_config(protocol, phase_dir, spec), [spec.loss_strategy], device, [spec.epochs])
+        if checkpoint_state(run_dir, spec.epochs)["state"] != "completed":
+            raise RuntimeError("Treino não finalizado; checkpoint preservado para retomada.")
     map_value, map50 = score_results(results)
     return {
         **asdict(spec),
@@ -179,9 +212,11 @@ def _confirmation_specs(protocol: dict[str, Any], summary: dict[str, Any]) -> li
 
 def _save_summary(project: Path, summary: dict[str, Any]):
     project.mkdir(parents=True, exist_ok=True)
-    (project / "protocol_summary.json").write_text(
+    temporary = project / "protocol_summary.json.tmp"
+    temporary.write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    temporary.replace(project / "protocol_summary.json")
     rows = [row for phase in PHASES for row in summary.get("runs", {}).get(phase, [])]
     if rows:
         with (project / "protocol_runs.csv").open("w", encoding="utf-8", newline="") as stream:
@@ -216,6 +251,7 @@ def run_phase(
         else {"data": str(Path(data).resolve()), "runs": {}, "final_test_completed": False}
     )
 
+    _reconcile_summary(project, summary)
     requested = PHASES if phase == "all" else (phase,)
     for current in requested:
         if current == "loss":
@@ -273,6 +309,7 @@ def protocol_status(protocol_path: str, project_path: str) -> dict[str, Any]:
         else {"runs": {}}
     )
     result: dict[str, Any] = {"project": str(project), "phases": {}}
+    _reconcile_summary(project, summary)
 
     phase_specs: dict[str, list[RunSpec] | None] = {"loss": loss_specs(protocol)}
     strategy = summary.get("winning_loss")
@@ -299,6 +336,11 @@ def protocol_status(protocol_path: str, project_path: str) -> dict[str, Any]:
             "completed": len(specs) - len(pending),
             "pending_indices": pending,
             "next_index": pending[0] if pending else None,
+            "checkpoints": [
+                {"index": index, **checkpoint_state(project / PHASE_DIRS[phase] / spec.name,
+                                                     spec.epochs)}
+                for index, spec in enumerate(specs, 1)
+            ],
         }
     result["final_test_completed"] = bool(summary.get("final_test_completed", False))
     return result
@@ -310,6 +352,7 @@ def finalize_test(data: str, project_path: str) -> dict[str, Any]:
     if not summary_path.exists():
         raise RuntimeError("Resumo não encontrado; execute o protocolo até confirm300.")
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    _reconcile_summary(project, summary)
     best = summary.get("best_model")
     if not best:
         raise RuntimeError("Melhor modelo ainda não foi confirmado em 300 épocas.")
