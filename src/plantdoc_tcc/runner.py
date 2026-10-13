@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Iterable
 
@@ -49,6 +50,10 @@ def train_grid(
             )
         last_checkpoint = project / spec.name / "weights" / "last.pt"
         resume = bool(config.get("resume_existing", False) and last_checkpoint.exists())
+        if resume:
+            backup = last_checkpoint.with_name("last.before_resume.pt")
+            if not backup.exists():
+                shutil.copy2(last_checkpoint, backup)
         model = YOLO(str(last_checkpoint) if resume else config.get("model", "yolov8n.pt"))
         augmentation = config.get("augmentation", {})
         arguments = dict(

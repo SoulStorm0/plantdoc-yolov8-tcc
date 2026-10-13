@@ -85,7 +85,8 @@ class StagedProtocolTest(unittest.TestCase):
 
     @patch("plantdoc_tcc.staged.audit_dataset")
     @patch("plantdoc_tcc.staged._run_spec")
-    def test_individual_loss_runs_persist_and_unlock_search(self, mocked_run, mocked_audit):
+    @patch("plantdoc_tcc.staged.checkpoint_state", return_value={"state": "completed"})
+    def test_individual_loss_runs_persist_and_unlock_search(self, state, mocked_run, mocked_audit):
         mocked_audit.return_value = SimpleNamespace(invalid_lines=[])
 
         def fake_run(data, protocol, phase_dir, spec, device):
